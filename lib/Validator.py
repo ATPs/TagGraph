@@ -277,11 +277,13 @@ def recalculateNetworkAttributes(indexed_taggraph_results, top_only = True, firs
 def initializeEMProbabilities(indexed_taggraph_results, spectrum_match_models, db_match_models, prior_probs = (0.5, 0.5)):
     for scanF in indexed_taggraph_results:
         for item in indexed_taggraph_results[scanF]:
-            # print scanF, item
+            #print scanF, item
             pos_model_prob = spectrum_match_models[0](item[0][1], item[0][12]) * db_match_models[0][item[0][6]]
             neg_model_prob = spectrum_match_models[1](item[0][1], item[0][12]) * db_match_models[1][item[0][6]]
             em_prob = pos_model_prob*prior_probs[0] / (pos_model_prob * prior_probs[0] + neg_model_prob * prior_probs[1])
             lg_em_prob = calculateLogEMProb(em_prob, neg_model_prob, pos_model_prob, prior_probs)
+            #if (item[0][16]==4): #slin msg
+            #    print "init em_prob %s lg_em_prob %s " % (em_prob, lg_em_prob)
             item[2] = (em_prob, lg_em_prob)
 
 # Calculates P(Context | +) and P(Context | -) for indexed taggraph_results
@@ -301,6 +303,8 @@ def calculateProteaseContextProbabilities(indexed_taggraph_results, num_scans, p
 
     for specificity in neg_probs:
         neg_probs[specificity] = max( min_prob, neg_probs[specificity] / (num_scans * prior_probs[1]) )
+        
+    #print "===slin===  called 4: calculateProteaseContextProbabilities  pos_probs %s neg_probs %s" % (pos_probs, neg_probs)
 
     return pos_probs, neg_probs
 
@@ -320,6 +324,8 @@ def calculateMissedCleavageProbabilities(indexed_taggraph_results, num_scans, pr
     for num_missed in neg_probs:
         neg_probs[num_missed] = max( min_prob, neg_probs[num_missed] / (num_scans * prior_probs[1]) )
         
+    #print "===slin===  called 7: calculateMissedCleavageProbabilities  pos_probs %s neg_probs %s" % (pos_probs, neg_probs)
+        
     return pos_probs, neg_probs
                                                             
 def calculatePPMErrorProbabilities(indexed_taggraph_results, num_scans, prior_probs, min_prob=1e-40):
@@ -337,7 +343,9 @@ def calculatePPMErrorProbabilities(indexed_taggraph_results, num_scans, prior_pr
         
     for ppm in neg_probs:
         neg_probs[ppm] = max( min_prob, neg_probs[ppm] / (num_scans * prior_probs[1]) )
-        
+ 
+    #print "===slin===  called 8: calculatePPMErrorProbabilities  pos_probs %s neg_probs %s" % (pos_probs, neg_probs)
+ 
     return pos_probs, neg_probs
 
 # Calculates P(Mod | +) and P(Mod | -) for indexed taggraph results
@@ -355,6 +363,8 @@ def calculateModProbabilities(indexed_taggraph_results, num_scans, prior_probs):
 
     def neg_mod_prob(item):
         return neg_modified[item[0][14]] * neg_num_mods[item[0][14]][item[0][9]] * neg_context_probs[item[1][1]] * neg_mod_size_probs[item[0][14]][item[0][13]] * neg_occurrence_probs[item[0][9]][item[1][2]] * neg_single_mod_of_multi[item[0][9]][item[1][3]] * neg_class_probs[item[0][14]][item[0][11]]
+
+        #print "===slin===  called 3: calculateModProbabilities  pos_probs %s neg_probs %s"  % (pos_probs, neg_probs)
 
     return pos_mod_prob, neg_mod_prob
 
@@ -461,7 +471,8 @@ def calculateDBMatchProbabilities(indexed_taggraph_results, num_scans, prior_pro
     for specificity in pos_probs:
         pos_probs[specificity] = max(min_prob, pos_probs[specificity] / (num_scans * prior_probs[0]))
         neg_probs[specificity] = max(min_prob, neg_probs[specificity] / (num_scans * prior_probs[1]))
-
+        
+    #print "===slin===  called 5 : calculateDBMatchProbabilities pos_probs %s neg_probs  %s"%(pos_probs, neg_probs)
     return pos_probs, neg_probs
 
 def calculateUniqueSiblingCountProbabilities(indexed_taggraph_results, num_scans, prior_probs, min_prob=1e-5):
@@ -477,7 +488,7 @@ def calculateUniqueSiblingCountProbabilities(indexed_taggraph_results, num_scans
     for count in pos_probs:
         pos_probs[count] = max(min_prob, pos_probs[count] / (num_scans * prior_probs[0]))
         neg_probs[count] = max(min_prob, neg_probs[count] / (num_scans * prior_probs[1]))
-
+    #print "===slin===  called 6 :calculateUniqueSiblingCountProbabilities  pos_probs %s  neg_probs  %s"%(pos_probs, neg_probs)
     return pos_probs, neg_probs
 
 
@@ -487,10 +498,14 @@ def getPriorProbabilities(indexed_taggraph_results, num_scans):
         item = indexed_taggraph_results[scanF][0]
         pos_prob_total += item[2][0]
 
-    print 'Prior', (pos_prob_total/num_scans, 1 - pos_prob_total/num_scans)
+    #switch back later
+    #print 'Prior', (pos_prob_total/num_scans, 1 - pos_prob_total/num_scans)
+    #print '===slin===  called 1: getPriorProbabilities %s Prior %s' % (pos_prob_total/num_scans, 1 - pos_prob_total/num_scans)
     return (pos_prob_total/num_scans, 1 - pos_prob_total/num_scans)
 
-# item[0][1], item[0][12]
+#item[0][1]:spectrum_score
+#item[0][12]:context_length
+#item[0][16] charge
 # returns P(z|+), P(z|-) as well as multivariate gaussian parameters for P(S,L|z,+), P(S,L|z,-) [parameters returned for a gaussian for each charge state]
 def getSpectrumMatchParametersMulti(indexed_taggraph_results, num_scans, prior_probs):
 
@@ -527,18 +542,28 @@ def getSpectrumMatchParametersMulti(indexed_taggraph_results, num_scans, prior_p
         
     for scanF in indexed_taggraph_results:
         item = indexed_taggraph_results[scanF][0]
+        #print "== slin == item %s"%item 
+         #slin msg
+         #if item[0][16]==4:
+         #   print "== slin == item::  item[0][1] %s item[0][12] %s item[0][16] %s  item[2][0] %s  "%(item[0][1],item[0][12],item[0][16],item[2][0])
+        
         spec_score_mu = item[0][1] - pos_spec_score_mean[item[0][16]]
         pept_length_mu = item[0][12] - pos_pept_length_mean[item[0][16]]
         covar = item[2][0] * spec_score_mu * pept_length_mu
+        #if item[0][16]==4:
+        #    print "== slin == for pos::  spec_score_mu %s pept_length_mu %s covar %s  "%(spec_score_mu,pept_length_mu,covar)
+        
         pos_sigma[item[0][16]][0] += item[2][0] * spec_score_mu**2
         pos_sigma[item[0][16]][1] += covar
         pos_sigma[item[0][16]][2] += covar
         pos_sigma[item[0][16]][3] += item[2][0] * pept_length_mu**2
         
-        
+     
         spec_score_mu = item[0][1] - neg_spec_score_mean[item[0][16]]
-        pept_length_mu = item[0][12] - neg_pept_length_mean[item[0][16]]
+        pept_length_mu = item[0][12] - neg_pept_length_mean[item[0][16]]        
         covar = (1 - item[2][0]) * spec_score_mu * pept_length_mu
+        #if item[0][16]==4:
+        #    print "== slin == for negative::  spec_score_mu %s pept_length_mu %s covar %s  "%(spec_score_mu,pept_length_mu,covar)
         neg_sigma[item[0][16]][0] += (1 - item[2][0]) * spec_score_mu**2
         neg_sigma[item[0][16]][1] += covar
         neg_sigma[item[0][16]][2] += covar
@@ -546,7 +571,7 @@ def getSpectrumMatchParametersMulti(indexed_taggraph_results, num_scans, prior_p
         
     #print pos_sigma, neg_sigma
     for charge in pos_sigma:
-        for i in range(4):
+        for i in range(4):  
             pos_sigma[charge][i] = pos_sigma[charge][i] / charge_pos_sums[charge]
             neg_sigma[charge][i] = neg_sigma[charge][i] / charge_neg_sums[charge]
 
@@ -554,6 +579,9 @@ def getSpectrumMatchParametersMulti(indexed_taggraph_results, num_scans, prior_p
         charge_pos_sums[charge] = charge_pos_sums[charge] / (num_scans * prior_probs[0])
         charge_neg_sums[charge] = charge_neg_sums[charge] / (num_scans * prior_probs[1])
 
+    #print "neg_sigma %s" % neg_sigma
+    
+    
     return charge_pos_sums, [pos_spec_score_mean, pos_pept_length_mean], pos_sigma, charge_neg_sums, [neg_spec_score_mean, neg_pept_length_mean], neg_sigma
      
 def getSpectrumMatchParameters(indexed_taggraph_results, num_scans, prior_probs):
@@ -584,31 +612,39 @@ def getSpectrumMatchParameters(indexed_taggraph_results, num_scans, prior_probs)
 def calculateSpectrumMatchProbabilities(indexed_taggraph_results, num_scans, prior_probs):
 
     pos_charge, pos_mean, pos_sigma, neg_charge, neg_mean, neg_sigma = getSpectrumMatchParametersMulti(indexed_taggraph_results, num_scans, prior_probs)
-    print 'charge pos', pos_charge, 'neg', neg_charge, 'gaussian', 'pos', pos_mean, pos_sigma, 'neg', neg_mean, neg_sigma
-
     pos_multi_pdf, neg_multi_pdf = {}, {}
-    for charge in pos_charge:
+    for charge in pos_charge:  #def getMultivariateNormalPDF(mu, sigma):
+        #print "call pos charge %s" %charge
         pos_multi_pdf[charge] = getMultivariateNormalPDF( (pos_mean[0][charge], pos_mean[1][charge]), pos_sigma[charge])
+        #print "call neg charge %s" %charge
         neg_multi_pdf[charge] = getMultivariateNormalPDF( (neg_mean[0][charge], neg_mean[1][charge]), neg_sigma[charge])
 
+        
     def pos_spec_prob(item):
+        #print "pos_spec_prob pos_charge[item[0][16]]:%s pos_multi_pdf[item[0][16]](item[0][1], item[0][12]):%s item[0][16]:%s item[0][1]:%s item[0][12]:%s" % (pos_charge[item[0][16]],pos_multi_pdf[item[0][16]](item[0][1],item[0][12]),item[0][16],item[0][1],item[0][12])
         return pos_charge[item[0][16]] * pos_multi_pdf[item[0][16]](item[0][1], item[0][12])
 
     def neg_spec_prob(item):
+        #print "neg_spec_prob neg_charge[item[0][16]]:%s neg_multi_pdf[item[0][16]](item[0][1], item[0][12]):%s item[0][16]:%s item[0][1]:%s item[0][12]:%s" % (neg_charge[item[0][16]],neg_multi_pdf[item[0][16]](item[0][1],item[0][12]),item[0][16],item[0][1],item[0][12])
         return neg_charge[item[0][16]] * neg_multi_pdf[item[0][16]](item[0][1], item[0][12])
-    
+        
+    #print '===slin===  called 2:  calculateSpectrumMatchProbabilities :    '  
     return pos_spec_prob, neg_spec_prob
 
 def calculateLogEMProb(em_prob, neg_model_prob, pos_model_prob, prior_probs):
-    if em_prob == 1.0:
-        lg_em_prob = -math.log10( (neg_model_prob*prior_probs[1]) / (pos_model_prob*prior_probs[0]) )
-    elif em_prob == 0.0:
-        lg_em_prob = (pos_model_prob*prior_probs[0]) / (neg_model_prob*prior_probs[1])
+    #slin
+    #print "in calculateLogEMProb em_prob :%s neg_model_prob :%s pos_model_prob:%s prior_probs[0] :%s  prior_probs[1] :%s" %(em_prob, neg_model_prob, pos_model_prob,  prior_probs[0], prior_probs[1])
+    if (pos_model_prob>1e-40 and neg_model_prob>1e-40): #slin: fix log error
+        if em_prob == 1.0:
+            lg_em_prob = -math.log10( (neg_model_prob*prior_probs[1]) / (pos_model_prob*prior_probs[0]) )
+        elif em_prob == 0.0:
+            lg_em_prob = (pos_model_prob*prior_probs[0]) / (neg_model_prob*prior_probs[1])
+        else:
+            lg_em_prob = -math.log10( 1 - em_prob )
     else:
-        lg_em_prob = -math.log10( 1 - em_prob )
-
+        lg_em_prob=1e-40
     return lg_em_prob
-    
+    #em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])    
     
 # Calculate EM Probabilities P(+|S,D,M) [i.e., hidden variables] based on inferred model parameters from previous step
 # inferred model parameters: P(context|+), P(context|-), P(mod|+), P(mod|-), mixture gaussian parameters for spectrum probability score and database probability score
@@ -624,38 +660,54 @@ def calculateEMProbabilities(indexed_taggraph_results, spectrum_match_models, mo
 
         for item in items:
             # Note: For items which have mods that weren't present in the top mod slot, these values default to the chosen pos_bias and neg_bias (0 and 1 currently)
-            #print item
+            #print "==slin== in calculateEMProbabilities1 %s" %item
             pos_model_prob, neg_model_prob = calculateClassProbabilities(item, spectrum_match_models, mod_models, context_models, db_match_models, protein_count_models, missed_cleavage_models, ppm_error_models)
-
-            em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])
-            lg_em_prob = calculateLogEMProb(em_prob, neg_model_prob, pos_model_prob, prior_probs)
-
+            #slin@
+            #print "==slin== in calculateEMProbabilities2 pos_model_prob :%s prior_probs[0]:%s neg_model_prob:%s prior_probs[1]:%s  " %(pos_model_prob,prior_probs[0],neg_model_prob,prior_probs[1])
+            if (pos_model_prob> 1e-40 and neg_model_prob>1e-40):
+                em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])     
+                lg_em_prob = calculateLogEMProb(em_prob, neg_model_prob, pos_model_prob, prior_probs)
+            else:
+                em_prob=1e-40
+                lg_em_prob=1e-40
+            #print "item: em_prob :%s lg_em_prob  :%s" %(em_prob, lg_em_prob)
+            #if (item[0][16]==4):
+            #    print "now em_prob %s lg_em_prob %s " % (em_prob, lg_em_prob)
+            
             item[2] = (em_prob, lg_em_prob)
         if rerank:
             indexed_taggraph_results[scanF] = sorted(indexed_taggraph_results[scanF], key = lambda item: -item[2][1])
 
 def calculateClassProbabilities(item, spectrum_match_models, mod_models, context_models, db_match_models, protein_count_models, missed_cleavage_models, ppm_error_models):
+    ##  this is 0 caused the problem! spectrum_match_models[0]
     pos_probs = calculateModelProbabilities(item, spectrum_match_models[0], mod_models[0], context_models[0], db_match_models[0], protein_count_models[0], missed_cleavage_models[0], ppm_error_models[0])
     neg_probs = calculateModelProbabilities(item, spectrum_match_models[1], mod_models[1], context_models[1], db_match_models[1], protein_count_models[1], missed_cleavage_models[1], ppm_error_models[1])
-
+    #print "pos_probs %s ,neg_probs %s" % (pos_probs,neg_probs)
     pos_model_prob = 1.0
     neg_model_prob = 1.0
     for i in range(len(pos_probs)):
+        
+        if pos_probs[i]==0:
+            #print "i pos: : %s pos_probs[i] : %s ,neg_probs[i] : %s "%(i,pos_probs[i],neg_probs[i])
+            pos_probs[i]=1e-40
+        if neg_probs[i]==0:
+            #print "i neg: : %s pos_probs[i] : %s ,neg_probs[i] : %s "%(i,pos_probs[i],neg_probs[i])
+            pos_probs[i]=1e-40
         pos_model_prob *= pos_probs[i]
         neg_model_prob *= neg_probs[i]
-
-    #print pos_model_prob, pos_probs
-    #print neg_model_prob, neg_probs
+    #print "calculateClassProbabilities : pos_model_prob:  %s neg_model_prob:  %s" % (pos_model_prob, neg_model_prob)
     return pos_model_prob, neg_model_prob
 
 def calculateModelProbabilities(item, spectrum_match_model, mod_model, context_model, db_match_model, protein_count_model, missed_cleavage_model, ppm_error_model):
+    #slin
+    #print "in calculateModelProbabilities: spectrum_match_model(item) %s" %spectrum_match_model(item)
     return [ spectrum_match_model(item), mod_model(item), context_model[item[0][7]], db_match_model[item[0][6]], protein_count_model[item[1][0]], missed_cleavage_model[item[0][10]], ppm_error_model[item[0][8]] ]
 
 
 
 def writeEMProbabilities(outFileName, indexed_taggraph_results, spectrum_match_models, mod_models, context_models, db_match_models, protein_count_models, missed_cleavage_models, ppm_error_models, prior_probs, topOnly=False, score_cut = 0.99):
     cols = ['ScanF', 'Charge', 'Matching Tag Length', 'Spectrum Probability Score', 'Specificity', 'Modified?', 'PPM Error', 'Mod Size', 'Num Mods', 'Unique Siblings', 'Context Mod Variants', 'Num Mod Occurrences', 'Mod Class', 'Num Single Mods Found', 'Context', 'Mod Context', 'Mod Tuple', 'EM Probability', '1-lg10 EM', 'Pos Spectrum Prob', 'Neg Spectrum Prob', 'Pos Mod Prob', 'Neg Mod Prob', 'Pos Context Prob', 'Neg Context Prob', 'Pos DB Match Prob', 'Neg DB Match Prob', 'Pos Protein Count Prob', 'Neg Protein Count Prob', 'Pos Missed Cleavage Prob', 'Neg Missed Cleavage Prob', 'Pos PPM Error Prob', 'Neg PPM Error Prob', 'Pos Prob', 'Neg Prob']
-
+    #print "sarah= outFileName %s" % outFileName
     outFile = open(outFileName, 'w')
     outFile.write('\t'.join(cols) + '\n')
 
@@ -668,8 +720,6 @@ def writeEMProbabilities(outFileName, indexed_taggraph_results, spectrum_match_m
                 items += [item]
             elif top_item[2][0] > score_cut and round(item[0][1], 1) == round(top_item[0][1], 1) and item[0][4] == top_item[0][4] and item[0][2] == top_item[0][2]:
                 items += [item]
-            
-            
         for item in items:
             
             pos_probs = calculateModelProbabilities(item, spectrum_match_models[0], mod_models[0], context_models[0], db_match_models[0], protein_count_models[0], missed_cleavage_models[0], ppm_error_models[0])
@@ -677,15 +727,18 @@ def writeEMProbabilities(outFileName, indexed_taggraph_results, spectrum_match_m
                 
             pos_model_prob, neg_model_prob = calculateClassProbabilities(item, spectrum_match_models, mod_models, context_models, db_match_models, protein_count_models, missed_cleavage_models, ppm_error_models)
 
-            em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])
 
-            if em_prob == 1.0:
-                lg_em_prob = -math.log10( (neg_model_prob*prior_probs[1]) / (pos_model_prob*prior_probs[0]) )
-            elif em_prob == 0.0:
-                lg_em_prob = (pos_model_prob*prior_probs[0]) / (neg_model_prob*prior_probs[1])
+            if (pos_model_prob>1e-40 and neg_model_prob>1e-40): #slin: fix log error
+                em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])
+                if em_prob == 1.0:
+                    lg_em_prob = -math.log10( (neg_model_prob*prior_probs[1]) / (pos_model_prob*prior_probs[0]) )
+                elif em_prob == 0.0:
+                    lg_em_prob = (pos_model_prob*prior_probs[0]) / (neg_model_prob*prior_probs[1])
+                else:
+                    lg_em_prob = -math.log10( 1 - em_prob )
             else:
-                lg_em_prob = -math.log10( 1 - em_prob )
-
+                em_prob=1e-40
+                lg_em_prob=1e-40
             write_info = {}
             write_info['ScanF'] = scanF
             write_info['Charge'] = item[0][16]
@@ -753,16 +806,19 @@ def writeEMProbabilitiesOnlyProbs(outFileName, indexed_taggraph_results, spectru
             neg_probs = calculateModelProbabilities(item, spectrum_match_models[1], mod_models[1], context_models[1], db_match_models[1], protein_count_models[1], missed_cleavage_models[1], ppm_error_models[1])
                 
             pos_model_prob, neg_model_prob = calculateClassProbabilities(item, spectrum_match_models, mod_models, context_models, db_match_models, protein_count_models, missed_cleavage_models, ppm_error_models)
+            if (pos_model_prob>1e-40 and neg_model_prob>1e-40): #slin: fix log error
+                em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])
 
-            em_prob = pos_model_prob*prior_probs[0] / (neg_model_prob*prior_probs[1] + pos_model_prob*prior_probs[0])
-
-            if em_prob == 1.0:
-                lg_em_prob = -math.log10( (neg_model_prob*prior_probs[1]) / (pos_model_prob*prior_probs[0]) )
-            elif em_prob == 0.0:
-                lg_em_prob = (pos_model_prob*prior_probs[0]) / (neg_model_prob*prior_probs[1])
+                if em_prob == 1.0:
+                    lg_em_prob = -math.log10( (neg_model_prob*prior_probs[1]) / (pos_model_prob*prior_probs[0]) )
+                elif em_prob == 0.0:
+                    lg_em_prob = (pos_model_prob*prior_probs[0]) / (neg_model_prob*prior_probs[1])
+                else:
+                    lg_em_prob = -math.log10( 1 - em_prob )
             else:
-                lg_em_prob = -math.log10( 1 - em_prob )
-
+                em_prob=1e-40
+                lg_em_prob=1e-40
+                
             write_info = {}
             write_info['ScanF'] = scanF
             write_info['EM Probability'] = em_prob
@@ -917,23 +973,12 @@ def updateModelParameters(indexed_taggraph_results, num_scans, recalculate_netwo
     ppm_error_models = calculatePPMErrorProbabilities(indexed_taggraph_results, num_scans, prior_probs)
 
     return spectrum_match_models, mod_models, context_models, db_match_models, protein_count_models, missed_cleavage_models, ppm_error_models, prior_probs
-    
-
-def getUnivariateNormalPDF(mu, sigma):
-    mu = float(mu)
-    sigma = float(sigma)
-    
-    norm_const = 1.0/ math.pow( 2*np.pi * sigma, 1.0/2 )
-
-    def prob_norm_calc(x):
-        x_mu = x - mu
-        return norm_const * math.pow(math.e, -x_mu**2 / (2 * sigma))
-
-    return prob_norm_calc
+  
 
 # Returns multivariate normal PDF as a function of input datapoint x (given parameters mu and sigma of distribution)
 def getMultivariateNormalPDF(mu, sigma):
-
+    #slin msg
+    #print "==slin == mu :%s , sigma :%s  " % (mu, sigma)
     size = len(mu)
     sigma_mat = np.matrix(sigma).reshape((2,2))
     det = np.linalg.det(sigma_mat)
@@ -1006,7 +1051,7 @@ def performEM(indexed_taggraph_results, initial_spectrum_match_models, initial_d
         curr_vec = np.array(curr_vec)
         dist = np.linalg.norm(prev_vec - curr_vec)
 
-        print 'Iteration %i, Distance %f'%(num_iterations, dist)
+        #print 'Iteration %i, Distance %f'%(num_iterations, dist)
 
     if write_data:
         writeModels(outBase + '_MODELS_BEFORERERANK.log', indexed_taggraph_results)
@@ -1124,25 +1169,25 @@ def rankMostPrevalentModOnTop(indexed_taggraph_results, min_log_score_diff = 1, 
         for i in range(1, len(items)):
             if items[i][0][2] != top_item_context or len(items[i][0][4]) != len(top_item_mods):
                 continue
-            print 'CANDIDATE', scanF, items[0][0][3], items[0][0][4], items[i][0][3], items[i][0][4]
+            #print 'CANDIDATE', scanF, items[0][0][3], items[0][0][4], items[i][0][3], items[i][0][4]
             if switchWithTop(items[0], items[i], mod_stats, mod_without_loc_counts, mod_context_win_counts, min_log_score_diff):
-                print 'SWITCHING'
+                #print 'SWITCHING'
                 items[i], items[0] = items[0], items[i]
 
         for i in range(1, len(items)):
             if items[i][0][2] != top_item_context or len(items[i][0][4]) == len(top_item_mods):
                 continue
-            print 'CANDIDATE', scanF, items[0][0][3], items[0][0][4], items[i][0][3], items[i][0][4]
+            #print 'CANDIDATE', scanF, items[0][0][3], items[0][0][4], items[i][0][3], items[i][0][4]
             if switchWithTop(items[0], items[i], mod_stats, mod_without_loc_counts, mod_context_win_counts, min_log_score_diff):
-                print 'SWITCHING'
+                #print 'SWITCHING'
                 items[i], items[0] = items[0], items[i]
 
         for i in range(1, len(items)):
             if items[i][0][2] == top_item_context:
                 continue
-            print 'CANDIDATE', scanF, items[0][0][3], items[0][0][4], items[i][0][3], items[i][0][4]
+            #print 'CANDIDATE', scanF, items[0][0][3], items[0][0][4], items[i][0][3], items[i][0][4]
             if switchWithTop(items[0], items[i], mod_stats, mod_without_loc_counts, mod_context_win_counts, min_log_score_diff):
-                print 'SWITCHING'
+                #print 'SWITCHING'
                 items[i], items[0] = items[0], items[i]
         
     if report_file and write_data:
@@ -1197,7 +1242,7 @@ def switchWithTop(top_item, item, mod_stats, mod_without_loc_counts, mod_context
     # Sometimes a multiply modded pept outscores a singly modified peptide for the same scanF, even though all of the mods in the less modified peptide are also present in the more modified result. The less modified result is almost universally better. This occurs because multiply modified peptides get a boost if single modded counterparts are found elsewhere
     #print item[0][15], top_item[0][15], set(item[0][15]) in set(top_item[0][15])
     if len(top_item[0][4]) > len(item[0][4]) and set(item[0][15]).issubset(set(top_item[0][15])):
-        print 'Switching based on item being subset of top'
+        #print 'Switching based on item being subset of top'
         return True
 
     item_mods_only = tuple([mod for mod in item[0][4] if mod not in top_item[0][4]])
@@ -1221,52 +1266,52 @@ def switchWithTop(top_item, item, mod_stats, mod_without_loc_counts, mod_context
     # Only execute this code if unmod contexts are the same and the two items to compare have the same number of mods
     # Spectrum score is often not enough to overwhelm other scoring attributes in this case, so we give it a little 'help' (could also be wrong localization due to spurious peak matches, so we'll need to watch this to make sure it doesn't return junk 
     if item[0][2] == top_item[0][2]:
-        print 'entering same context switch'
+        #print 'entering same context switch'
         # Get minimum mod counts over all mods in the current item which are not in top item (normalizes for case when both top_item and item share a 'rare' mod such as GlycerylPE)
 
         # For mass error constraint, make sure that item mod error is less than mod error diff or that top item mod error is less than mod error diff
         # Also, mod class of item is 0 or 1 or mod class of top item is greater than 1
         # print item[0][11] < 2 or top_item[0][11] >= 2, len(item_mods_only) == 1 and len(top_item_mods_only) == 1, (top_item[0][8] == 'Indeterminate' or item[0][8] == 'Indeterminate' or abs(item[0][8]) < mod_error_diff or abs(top_item[0][8]) > mod_error_diff)
         if len(item_mods_only) == 1 and len(top_item_mods_only) == 1:
-            print 'Both mods counts one', top_item_mods_only, mod_context_win_counts[item[0][2]][top_item_mods_only], item_mods_only, mod_context_win_counts[item[0][2]][item_mods_only], sum(indiv_top_item_mod_counts), sum(indiv_item_mod_counts), min_mods_only_in_top_item_counts, min_mods_not_in_top_item_counts, top_item[0][10], item[0][10]
+            #print 'Both mods counts one', top_item_mods_only, mod_context_win_counts[item[0][2]][top_item_mods_only], item_mods_only, mod_context_win_counts[item[0][2]][item_mods_only], sum(indiv_top_item_mod_counts), sum(indiv_item_mod_counts), min_mods_only_in_top_item_counts, min_mods_not_in_top_item_counts, top_item[0][10], item[0][10]
             if (top_item[0][8] == 'Indeterminate' or item[0][8] == 'Indeterminate' or abs(item[0][8]) <= mod_error_diff or abs(top_item[0][8]) > mod_error_diff):
                 if mod_context_win_counts[item[0][2]][item_mods_only] - abs(round((min_mods_only_in_top_item_counts - min_mods_not_in_top_item_counts)/ratio_for_same_context_switch)) - 2*(item[0][10] - top_item[0][10]) > mod_context_win_counts[item[0][2]][top_item_mods_only] and (top_item[0][8] == 'Indeterminate' or (item[0][8] != 'Indeterminate' and abs(item[0][8]) <= abs(top_item[0][8])) ):
                     # Makes sure that the current mod isn't switched for a REALLY abundant one (i.e., Xle->Arg for Carbamyl, Insertion of G for Carbamidomethyl, etc.)
                     # Also add two to # of context wins required to switch for each missed cleavage more which is present in the item relative to the top item
-                    print 'Switching based on context win'
+                    #print 'Switching based on context win'
                     return True
 
                 if mod_context_win_counts[item[0][2]][item_mods_only] >= mod_context_win_counts[item[0][2]][top_item_mods_only]:
                     # Make sure that mod context win counts for item mod at least equals that for top mod even for prevalence based switching
                     if item_spec_score >= top_spec_score and sum(indiv_item_mod_counts) - min_unique_count_diff_to_switch >= sum(indiv_top_item_mod_counts):
-                        print 'Switching based on mod counts'
+                        #print 'Switching based on mod counts'
                         return True
 
                     # To distinguish Gly from carbamidomethyl, etc.
                     # Only when both items have same mod context
                     if item[0][3] == top_item[0][3] and item_spec_score >= top_spec_score and item_mods_only[0][1] == top_item_mods_only[0][1] and sum([ mod_without_loc_counts[mod[:2]] for mod in item[0][4] ]) > sum([ mod_without_loc_counts[mod[:2]] for mod in top_item[0][4] ]):
-                        print 'Switching based on mod without loc counts'
+                        #print 'Switching based on mod without loc counts'
                         return True
 
             return False
         elif item_spec_score >= top_spec_score and min_mods_not_in_top_item_counts >= min_unique_over_cut_same_context and sum(indiv_item_mod_counts)/len(indiv_item_mod_counts) > sum(indiv_top_item_mod_counts)/len(indiv_top_item_mod_counts):
-            print 'Switching based on average mod count greater', min_mods_not_in_top_item_counts >= min_unique_over_cut_same_context,  sum(indiv_item_mod_counts)/len(indiv_item_mod_counts) > sum(indiv_top_item_mod_counts)/len(indiv_top_item_mod_counts)
+            #print 'Switching based on average mod count greater', min_mods_not_in_top_item_counts >= min_unique_over_cut_same_context,  sum(indiv_item_mod_counts)/len(indiv_item_mod_counts) > sum(indiv_top_item_mod_counts)/len(indiv_top_item_mod_counts)
             # TODO: For comparing a more modified protein with a less modified protein, add constraint that spectrum score must be strictly greater or that number of single mods found is greater than 0?
             # For comparing multiply modded peptides, or peptides with different numbers of mods on same context
             return True
         elif len(item_mods_only) != 0 and len(top_item_mods_only) > len(item_mods_only) and item_spec_score >= top_spec_score and (min_mods_only_in_top_item_counts < min_unique_over_cut_same_context or min_mods_not_in_top_item_counts > min_mods_only_in_top_item_counts) and ( (len(item[0][4]) == 1 and top_item[1][3] == 0) or (len(item[0][4]) > 1 and item[1][3] >= top_item[1][3]) ):
             # For case when combo mod is on top and single mod is candidate for rerank. Want to be really careful here, but allow rerank if top combo mod is highly implausible (i.e., one of the mods in the combo is 'rare', or the item to rerank has more prevalent minumum mods than the top mod and no single mod from combo mod has been found at same context). Must also pass a spectrum score cutoff
-            print 'Switching based on top mod min less prevalent than cutoff or item mod', min_mods_only_in_top_item_counts < min_unique_over_cut_same_context or min_mods_not_in_top_item_counts > min_mods_only_in_top_item_counts, len(item[0][4]) == 1 and top_item[1][3] == 0, (len(item[0][4]) == 1 and top_item[1][3] == 0) or (len(item[0][4]) > 1 and item[1][3] >= top_item[1][3])
+            #print 'Switching based on top mod min less prevalent than cutoff or item mod', min_mods_only_in_top_item_counts < min_unique_over_cut_same_context or min_mods_not_in_top_item_counts > min_mods_only_in_top_item_counts, len(item[0][4]) == 1 and top_item[1][3] == 0, (len(item[0][4]) == 1 and top_item[1][3] == 0) or (len(item[0][4]) > 1 and item[1][3] >= top_item[1][3])
             return True
             #elif len(top_item_mods_only) != 0 and len(item_mods_only) > len(top_item_mods_only) and min_mods_not_in_top_item_counts > min_unique_over_cut_same_context and ( (len(top_item[0][4]) == 1 and item[1][3] > 0) or item[1][3] > top_item[1][3] ):
             # For case when expanded combo mod is candidate for rerank and top_item has less mods, only rerank if all mods in combo mod are prevalent and more single mods have been found in context for item than top_item (different from above scenario as this does not require the spectrum score of the combo mod to be greater)
             #return True
         else:
-            print 'same context switch false'
+            #print 'same context switch false'
             return False
 
     
-    print 'entering diff context switch'
+    #print 'entering diff context switch'
     # Generic switching comparator based on number of unique hits with EM prob > 0.99 for mod, Only triggers in cases where above comparators fail to return (i.e., different contexts, no exact match, mods for one item not entirely contained in mods for the other item)
     # Only switches if context for one of the peptide candidates is within context for another peptide candidate (i.e., Succinyl vs Carbamyl at same 'site'), does not switch if contexts are on different proteins entirely
     more_prevalent = False
@@ -1279,7 +1324,7 @@ def switchWithTop(top_item, item, mod_stats, mod_without_loc_counts, mod_context
 
     # Comparing singly to doubly modded peptides sometimes has large differences in EM Prob. EM Probs have to be close here UNLESS top item has similar mass error to item or top item is multiply modified
     if same_context and more_prevalent and (top_item[2][1]-item[2][1] < min_log_score_diff or len(top_item[0][4]) > 1 or (item[0][8] != 'Indeterminate' and (top_item[0][8] == 'Indeterminate' or abs(top_item[0][8]) >= abs(item[0][8]))) ):
-        print 'Switching based on diff context more counts', len(mod_stats[item[0][4]]) >= min_unique_over_cut_generic and len(mod_stats[top_item[0][4]]['Unique Over 99 Top']) < len(mod_stats[item[0][4]]['Unique Over 99 Top']), len(top_item_mods_only) > 0 and min_mods_not_in_top_item_counts >= min_unique_over_cut_generic and min_mods_not_in_top_item_counts > min_mods_only_in_top_item_counts
+        #print 'Switching based on diff context more counts', len(mod_stats[item[0][4]]) >= min_unique_over_cut_generic and len(mod_stats[top_item[0][4]]['Unique Over 99 Top']) < len(mod_stats[item[0][4]]['Unique Over 99 Top']), len(top_item_mods_only) > 0 and min_mods_not_in_top_item_counts >= min_unique_over_cut_generic and min_mods_not_in_top_item_counts > min_mods_only_in_top_item_counts
         return True
     else:
         return False
@@ -1297,7 +1342,7 @@ def getSensitivityAndPrecisionArrs(scoreArr, critArr, critCutOff=0.9, numPoints=
     trueScores = scoreArr[truePosInds]
     falseScores = np.delete(scoreArr, truePosInds)
 
-    print scoreArr
+    #print scoreArr
     maxScore = np.amax(scoreArr)
     minScore = np.amin(scoreArr)
     scoreCutoffs = np.linspace(minScore, maxScore, num=numPoints)
@@ -1371,4 +1416,18 @@ def writeFDRArr(scoreCutoffs, FDRArr, outFileName):
 
     outFile.close()
 
+    
+  
+
+def getUnivariateNormalPDF(mu, sigma):
+    mu = float(mu)
+    sigma = float(sigma)
+    
+    norm_const = 1.0/ math.pow( 2*np.pi * sigma, 1.0/2 )
+
+    def prob_norm_calc(x):
+        x_mu = x - mu
+        return norm_const * math.pow(math.e, -x_mu**2 / (2 * sigma))
+
+    return prob_norm_calc    
 

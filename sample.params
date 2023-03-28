@@ -1,20 +1,73 @@
 ##### General Settings #####
 [General]
 # Not used at this time, place-holder for the capabilities to only run the TG step, or the EM step if TG was run previously
-runTG = True
-runEM = True
+runTG       =True
+runEM       =True
+nonPEAKS    =True
 
 # If set to True the copies of the input mzML/mzXML input files are removed from the output tree when the run has finished.
 cleanInputDataFilesFromOutput = True
 cleanIntermediateFiles = False
 
 # output file
-generatePepXML = False
-outputPerFraction = False
-FDRCutoff = 0.01
-logEMCutoff = 20
-DisplayProteinNum = 3
+generatePepXML      = False
+outputPerFraction   = False
+FDRCutoff           = 0.01
+logEMCutoff         = 20
+DisplayProteinNum   = 3
 ##### END General Settings #####
+
+
+##### De Novo Settings #####
+[DeNovo]
+# File mapping: 
+# If de novo sequencing program creates a single output text file, simply enter that text file; 
+# Otherwise, if de novo sequencing program generates one text output per input raw data file and there are multiple raw data input files, enter the folder which contains all de novo files: e.g.:
+# de_novo= /project_folder/de_novo_results/denovo_output.csv OR de_novo=/project_folder/de_novo_results/
+de_novo            =A375_Dataset/
+
+# If de novo sequencing program generates one text output per input file, enter mapping here, linking each de novo file to the root name of the corresponding input raw data file via a pipe (|) separating each de novo / raw file pair by semicolons, e.g.: denovoMZML =216.csv|ath017216;217.csv|ath017217, otherwise, leave blank.
+denovoMZML      =216.csv|ath017216
+
+# De novo output file parsing  
+# De novo output file parsing: Header lines to ignore
+# Enter number lines in de novo input file which contains descriptive information (e.g., column headers) to ignore.  e.g.,:Ignore rows= 1
+ignoreRows       =1
+
+#delimiter for the denovo file. eg: a tab, a commma, etc
+denovoFileDelimiter=	
+
+# Column assignment
+# Column assignment: Multiple raw file / Fraction designation:
+# When searching multiple input raw files in one batch, does the de novo software assign a unique identifier to each input raw file (e.g., a fraction number)?  If so, enter the column number which contains this information (left-most column = 1) e.g.,:fractionID= 1 
+fractionID      =?
+
+# Column assignment: Scan designation
+# Enter column number which contains scan mapping information for given peptide (left-most column = 1) if it's multiple scan IDs, then include the scanSplitter (eg: deepnovo sequences) e.g.,scan= 10
+scan            =10
+
+# De novo output file parsing: Scan parsing: 
+#If de novo sequencing program aggregates multiple scans which contributed to a peptide identification (e.g., "2333;2567;2673"), enter the character which delimits each scan (i.e., "/"). e.g., scanSplitter= ;
+scanSplitter    =";"
+
+# Column assignment: Charge designation
+# Enter column number which contains charge assignment information for given peptide (left-most column = 1) e.g.,charge= 7
+charge	        =7
+
+# Column assignment: Peptide sequence
+# Enter column number which contains peptide sequence (left-most column = 1) e.g., : peptide = 3
+peptide         =3
+
+# De novo output file parsing: Peptide parsing: 
+# If de novo sequencing program enters a character between each returned amino acid (e.g., "P.E.P.T.I.D.E"), enter that character (i.e., ".").  TagGraph will ignore this character in the peptide sequence: e.g.,denovoDelimeter= .
+peptideDelimiter=,
+
+#optional parameters:
+rt              =?
+precursor_mz    =6
+ALCinPCT        =5
+LC              =11
+##### End De Novo Settings #####
 
 ##### TagGraph Settings #####
 [TagGraph]

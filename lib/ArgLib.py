@@ -1,19 +1,19 @@
 # Created on Sep 23, 2011
 # @author: Arun
 #
-# 20160921    slin  modify to the take value from a init File:  init.config under project directory
-# 20171113    slin  made init.config optinal for the project.
-#
-#
-
+#slin 20160921  modify to the take value from a init File:  init.config under project directory
+#slin 20171113  made init.config optinal for the project.
+#slin 201806    update code for Metaproteome
+#slin 20190115  new version by pass LADs, peaks Denovo.  -j, --simple as new switch
 
 import sys
 import os
 from optparse import OptionParser
-
 import Constants
 import DataFile
 
+# setupParams():
+# setup program
 def setupParams():
     fullPath=os.path.dirname(__file__)
     defaultVal = dict() 
@@ -41,18 +41,20 @@ def setupParams():
     defaultVal["sqlitedb"]=False
     defaultVal["experimentname"]=False
     defaultVal["fracs"]=False
-
-    if os.path.exists(fullPath+"/init.config"):
-        with open(fullPath+"/init.config") as f:
-            for line in f:
-                line = line.strip()
-                if "=" in line:
-                    splitLine = line.split("=")
-                    if splitLine[0] in defaultVal.keys():
-                        defaultVal.update({splitLine[0]:splitLine[1]})
-                    else:
-                        defaultVal[splitLine[0]]=splitLine[1]
-
+    defaultVal["uselads"]=False
+    defaultVal["simple"]=False    
+    defaultVal["ladsresults"]=""
+    #slin: clean up
+    #if os.path.exists(fullPath+"/init.config"):
+    #    with open(fullPath+"/init.config") as f:
+    #        for line in f:
+    #            line = line.strip()
+    #            if "=" in line:
+    #                splitLine = line.split("=")
+    #                if splitLine[0] in defaultVal.keys():
+    #                    defaultVal.update({splitLine[0]:splitLine[1]})
+    #                else:
+    #                    defaultVal[splitLine[0]]=splitLine[1]
     A = {
     'dtadir': {'opts': ('-d', '--dtadir'), 'attrs': {'type': 'string', 'dest': 'dtadir','default': defaultVal["dtadir"],'help': 'Directory of .dta files or dta.tgz file'}},  
     'config': {'opts': ('-c', '--config'), 'attrs': {'type': 'string', 'dest': 'config','default': defaultVal["config"], 'help': 'Path to model configuration file. If none is provided, will check the params file.'}},
@@ -69,7 +71,7 @@ def setupParams():
     'number': {'opts': ('-y', '--number'), 'attrs': {'type': 'int', 'dest': 'number', 'help': 'Just a number (integer). Use varies with program.'}},
     'ambigpenalty': {'opts': ('-a', '--ambigpenalty'), 'attrs': {'type': 'float', 'dest': 'ambigpenalty', 'default': defaultVal["ambigpenalty"], 'help': 'Score penalty for ambiguous edges in spectrum graph'}},
     'ppmpenalty': {'opts': ('-A', '--ppmpenalty'), 'attrs': {'type': 'float', 'dest': 'ppmpenalty', 'default': defaultVal["ppmpenalty"], 'help': 'Maximum score penalty for ppm deviation from true sequence mass in edges of spectrum graph'}},
-    'scans': {'opts': ('-N', '--scans'), 'attrs': {'type': 'string', 'dest': 'scans','help': 'Optional. A list of scans to specifically target using tag-graph, separated by commas (e.g., scan1,scan2,etc.)'}},    
+    'scans': {'opts': ('-N', '--scans'), 'attrs': {'type': 'string', 'dest': 'scans','help': 'Optional. A list of scans to specifically target using tag-graph, separated by commas (e.g., scan1,scan2,etc.)'}},
     'excludescans': {'opts': ('-s', '--excludescans'), 'attrs': {'type': 'string', 'dest': 'excludescans', 'help': 'Optional. A list of scans to exclude from tag-graph analysis, separated by commas (e.g., scan1,scan2,etc.)'}},
     'maxcounts': {'opts': ('-M', '--maxcounts'), 'attrs': {'type': 'int', 'dest': 'maxcounts', 'default': defaultVal["maxcounts"], 'help': 'Maximum number of times a maximum matching substring can be found in sequence database. Recommend 1,000 for single organism database (i.e., human uniprot) and 5,000 for nr or 6-frame translations'}},
     'modmaxcounts': {'opts': ('-C', '--modmaxcounts'), 'attrs': {'type': 'int', 'dest': 'modmaxcounts', 'default': defaultVal["modmaxcounts"], 'help': 'Maximum number of times a maximum matching substring can be found in sequence database for in-exact de novo peptide matches subsequently evaluated for presence of modifications. Recommend 200 for single organism database (i.e., human uniprot) and 1,000 for nr or 6-frame translations'}},
@@ -97,13 +99,16 @@ def setupParams():
     'srchid': {'opts': ('-H', '--srchid'), 'attrs': {'type': 'int', 'dest': 'srchid', 'default': defaultVal["srchid"], 'help': 'Dictionary which maps name of database search in output to the searchID of interest in aggregated exported database search file (.csv), optional'}},
     'sqlitedb':  {'opts': ('-B', '--sqlitedb'), 'attrs': {'type': 'string', 'dest': 'sqlitedb', 'default': defaultVal["sqlitedb"], 'help': 'Location of sqlite db to connect to, must be an absolute path.'}},
     'experimentname': {'opts': ('-E', '--experimentname'), 'attrs': {'type': 'string', 'dest': 'experimentname', 'default': defaultVal["experimentname"], 'help': 'Name of experiment to pull from database.'}},
-    'fracs': {'opts': ('-F', '--fracs'), 'attrs': {'type': 'string', 'dest': 'fracs', 'default': defaultVal["fracs"], 'help': 'Fractions to use from database. Argument should be in form frac1,frac2,frac3,etc.'}}
+    'fracs': {'opts': ('-F', '--fracs'), 'attrs': {'type': 'string', 'dest': 'fracs', 'default': defaultVal["fracs"], 'help': 'Fractions to use from database. Argument should be in form frac1,frac2,frac3,etc.'}},
+    'simple': {'opts': ('-j', '--simple'), 'attrs': {'type': 'string', 'dest': 'simple', 'default': defaultVal["simple"], 'help': 'by pass any denovo process, just move on to the regular TG process..'}},
+    'uselads': {'opts': ('-Z', '--uselads'), 'attrs': {'type': 'string', 'dest': 'uselads', 'default': defaultVal["uselads"], 'help': 'use LADS result'}},  
+    'ladsresults': {'opts': ('-z', '--ladsresults'), 'attrs': {'type': 'string', 'dest': 'ladsresults', 'default': defaultVal["ladsresults"], 'help': 'use LADS result'}},
     }
     return A
 
 def parse(arglist, optArgs=[]):
     A=setupParams()
-    parser = OptionParser(usage="%prog [options]")        
+    parser = OptionParser(usage="%prog [options]")
     for arg in arglist:
         parser.add_option(*A[arg]['opts'], **A[arg]['attrs'])
     for optArg in optArgs:
