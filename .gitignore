@@ -11,3 +11,17 @@ data
 *.pck.original
 *.model
 *.txt.1
+
+
+# C++
+*.out
+*.exe
+*.o
+
+# Python
+__pycache__/
+*.pyc
+*/__pycache__/
+
+# Shell
+*.swp
